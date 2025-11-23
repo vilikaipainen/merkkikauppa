@@ -117,7 +117,7 @@ updatePointsDisplay();
 
 let ITEMS = {};
 function loadData() {
-    fetch("./data.json")
+    fetch("/data.json")
         .then(res => res.json())
         .then(data => {
             ITEMS = data;
