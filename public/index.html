@@ -12,7 +12,7 @@
         margin: 0;
     }
     h1 { text-align: center; font-size: 24px; margin-bottom: 20px; }
-    
+
     .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -21,27 +21,6 @@
         margin: 0 auto;
     }
 
-    @media (max-width: 900px) { 
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 20px;
-        max-width: 600px;
-        margin: 0 auto;
-    }
- }
-    @media (max-width: 600px) { 
-        
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 20px;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-        body { padding: 10px; }
-    }
     .store-item {
         background: white;
         padding: 12px;
@@ -99,7 +78,9 @@
 <body>
 <h1>Store</h1>
 <h2 id="pointsDisplay">Points: 0</h2>
+
 <div class="grid" id="grid"></div>
+
 <div id="confirmModal" class="modal-bg">
     <div class="modal">
         <h3 id="modalText">Are you sure you want to buy this item?</h3>
@@ -107,75 +88,89 @@
         <button class="cancel-btn" onclick="closeModal()">Cancel</button>
     </div>
 </div>
+
 <script>
+/* ---- POINT SYSTEM ---- */
 function updatePointsDisplay() {
     const points = Number(localStorage.getItem("points") || 0);
     document.getElementById("pointsDisplay").textContent = "Points: " + points;
 }
-
 updatePointsDisplay();
 
+/* ---- LOAD ITEMS ---- */
 let ITEMS = {};
+
 function loadData() {
-    fetch("/data.json")
-        .then(res => res.json())
+    fetch("./data.json")   // <--- toimii GitHub & Appsmith
+        .then(res => {
+            if (!res.ok) throw new Error("JSON LOAD FAILED");
+            return res.json();
+        })
         .then(data => {
             ITEMS = data;
             buildGrid();
+        })
+        .catch(err => {
+            console.error("DATA LOAD ERROR:", err);
         });
 }
-console.log("ITEMS BEFORE LOAD:", ITEMS);
 
+/* ---- BUILD STORE GRID ---- */
 function buildGrid() {
     const grid = document.getElementById("grid");
     grid.innerHTML = "";
+
     for (let i = 1; i <= 9; i++) {
         const item = ITEMS[i];
+        if (!item) continue;
+
         const div = document.createElement("div");
         div.className = "store-item";
         div.innerHTML = `
             <img src="${item.image}" alt="${item.name}">
             <h3>${item.name}</h3>
+            <p>Price: ${item.price}</p>
             <button onclick="openModal(${i})">Buy</button>
         `;
         grid.appendChild(div);
     }
 }
+
+/* ---- MODAL ---- */
 let selectedItem = null;
+
 function openModal(id) {
     selectedItem = id;
-    const item = ITEMS[id];
     document.getElementById("modalText").textContent =
-        "Buy " + item.name + " for " + item.price + " points?";
+        "Buy " + ITEMS[id].name + " for " + ITEMS[id].price + " points?";
     document.getElementById("confirmModal").style.display = "flex";
 }
 
-}
 function closeModal() {
     document.getElementById("confirmModal").style.display = "none";
 }
-function confirmPurchase() {
-    const item = ITEMS[selectedItem];
-    let points = Number(localStorage.getItem("points") || 0);
 
-    if (points < item.price) {
+/* ---- PURCHASE ---- */
+function confirmPurchase() {
+    closeModal();
+
+    let points = Number(localStorage.getItem("points") || 0);
+    const price = ITEMS[selectedItem].price;
+
+    if (points < price) {
         alert("Not enough points!");
         return;
     }
 
-    // vähennä pisteet
-    points -= item.price;
+    points -= price;
     localStorage.setItem("points", points);
-
-    // päivitä näkymä
     updatePointsDisplay();
 
-    closeModal();
-
-    alert("You purchased: " + item.name + "! (-" + item.price + " points)");
+    alert("You bought: " + ITEMS[selectedItem].name);
 }
 
 loadData();
 </script>
 </body>
 </html>
+
