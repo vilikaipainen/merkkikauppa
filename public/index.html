@@ -142,17 +142,37 @@ function buildGrid() {
 let selectedItem = null;
 function openModal(id) {
     selectedItem = id;
+    const item = ITEMS[id];
     document.getElementById("modalText").textContent =
-        "Are you sure you want to buy: " + ITEMS[id].name + "?";
+        "Buy " + item.name + " for " + item.price + " points?";
     document.getElementById("confirmModal").style.display = "flex";
+}
+
 }
 function closeModal() {
     document.getElementById("confirmModal").style.display = "none";
 }
 function confirmPurchase() {
+    const item = ITEMS[selectedItem];
+    let points = Number(localStorage.getItem("points") || 0);
+
+    if (points < item.price) {
+        alert("Not enough points!");
+        return;
+    }
+
+    // vähennä pisteet
+    points -= item.price;
+    localStorage.setItem("points", points);
+
+    // päivitä näkymä
+    updatePointsDisplay();
+
     closeModal();
-    alert("You purchased: " + ITEMS[selectedItem].name + "! Thank you.");
+
+    alert("You purchased: " + item.name + "! (-" + item.price + " points)");
 }
+
 loadData();
 </script>
 </body>
