@@ -98,6 +98,7 @@
 </head>
 <body>
 <h1>Store</h1>
+<h2 id="pointsDisplay">Points: 0</h2>
 <div class="grid" id="grid"></div>
 <div id="confirmModal" class="modal-bg">
     <div class="modal">
@@ -107,6 +108,13 @@
     </div>
 </div>
 <script>
+function updatePointsDisplay() {
+    const points = Number(localStorage.getItem("points") || 0);
+    document.getElementById("pointsDisplay").textContent = "Points: " + points;
+}
+
+updatePointsDisplay();
+
 let ITEMS = {};
 function loadData() {
     fetch("data.json")
