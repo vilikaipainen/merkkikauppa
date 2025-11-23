@@ -1,11 +1,11 @@
 {
-  "1": { "name": "Haalarimerkki 1", "image": "/images/merkki1.png", "price": 100  },
-  "2": { "name": "Haalarimerkki 2", "image": "/images/merkki2.png", "price": 100  },
-  "3": { "name": "Haalarimerkki 3", "image": "/images/merkki3.png", "price": 100  },
-  "4": { "name": "Haalarimerkki 4", "image": "/images/merkki4.png", "price": 100  },
-  "5": { "name": "Haalarimerkki 5", "image": "/images/merkki5.png", "price": 100  },
-  "6": { "name": "Haalarimerkki 6", "image": "/images/merkki6.png", "price": 100  },
-  "7": { "name": "Haalarimerkki 7", "image": "/images/merkki7.png", "price": 100  },
-  "8": { "name": "Haalarimerkki 8", "image": "/images/merkki8.png", "price": 100  },
-  "9": { "name": "Haalarimerkki 9", "image": "/images/merkki9.png", "price": 100  }
+  "1": { "name": "Haalarimerkki 1", "image": "/images/merkki1.png", "price": 1  },
+  "2": { "name": "Haalarimerkki 2", "image": "/images/merkki2.png", "price": 1  },
+  "3": { "name": "Haalarimerkki 3", "image": "/images/merkki3.png", "price": 1  },
+  "4": { "name": "Haalarimerkki 4", "image": "/images/merkki4.png", "price": 1  },
+  "5": { "name": "Haalarimerkki 5", "image": "/images/merkki5.png", "price": 1  },
+  "6": { "name": "Haalarimerkki 6", "image": "/images/merkki6.png", "price": 1  },
+  "7": { "name": "Haalarimerkki 7", "image": "/images/merkki7.png", "price": 1  },
+  "8": { "name": "Haalarimerkki 8", "image": "/images/merkki8.png", "price": 1  },
+  "9": { "name": "Haalarimerkki 9", "image": "/images/merkki9.png", "price": 1  }
 }
