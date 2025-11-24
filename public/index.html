@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Store</title>
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -11,31 +12,45 @@
         background: #f6f6f6;
         margin: 0;
     }
-    h1 { text-align: center; font-size: 24px; margin-bottom: 20px; }
 
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 20px;
+    h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
+    #pointsDisplay { text-align: center; margin-bottom: 20px; }
+
+    /* --- SLIDER --- */
+    .slider-container {
+        width: 100%;
         max-width: 600px;
+        overflow: hidden;
         margin: 0 auto;
+        position: relative;
+    }
+
+    .slider {
+        display: flex;
+        transition: transform 0.35s ease;
     }
 
     .store-item {
-        background: white;
+        min-width: 50%;
+        box-sizing: border-box;
         padding: 12px;
+        background: white;
+        margin: 10px;
         border-radius: 10px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         text-align: center;
     }
+
     .store-item img {
         width: 100%;
-        height: auto;
         max-height: 200px;
         object-fit: cover;
         border-radius: 8px;
     }
-    .store-item h3 { margin: 10px 0 8px; font-size: 18px; }
+
+    h3 { margin: 10px 0 8px; font-size: 18px; }
+    p { margin: 0; }
+
     button {
         margin-top: 10px;
         padding: 12px;
@@ -47,7 +62,25 @@
         font-size: 16px;
         cursor: pointer;
     }
+
     button:hover { background: #005fcc; }
+
+    /* --- NAVIGATION BUTTONS --- */
+    .slider-controls {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+        gap: 20px;
+    }
+
+    .slider-controls button {
+        padding: 10px 20px;
+        font-size: 20px;
+        border-radius: 8px;
+        width: 80px;
+    }
+
+    /* --- MODAL --- */
     .modal-bg {
         display: none;
         position: fixed;
@@ -58,6 +91,7 @@
         align-items: center;
         padding: 20px;
     }
+
     .modal {
         background: white;
         padding: 25px;
@@ -66,21 +100,33 @@
         max-width: 350px;
         text-align: center;
     }
+
     .modal button {
         width: 45%;
         margin: 8px;
         font-size: 16px;
         padding: 12px;
     }
+
     .cancel-btn { background: #888; }
 </style>
 </head>
 <body>
+
 <h1>Store</h1>
 <h2 id="pointsDisplay">Points: 0</h2>
 
-<div class="grid" id="grid"></div>
+<!-- ⭐ NEW SLIDER -->
+<div class="slider-container">
+    <div class="slider" id="slider"></div>
+</div>
 
+<div class="slider-controls">
+    <button onclick="prevPage()">←</button>
+    <button onclick="nextPage()">→</button>
+</div>
+
+<!-- MODAL -->
 <div id="confirmModal" class="modal-bg">
     <div class="modal">
         <h3 id="modalText">Are you sure you want to buy this item?</h3>
@@ -90,59 +136,105 @@
 </div>
 
 <script>
-/* ---- POINT SYSTEM ---- */
+/* ---- POINT DISPLAY ---- */
 function updatePointsDisplay() {
     const points = Number(localStorage.getItem("points") || 0);
     document.getElementById("pointsDisplay").textContent = "Points: " + points;
 }
 updatePointsDisplay();
 
-/* ---- LOAD ITEMS ---- */
+/* ---- DATA ---- */
 let ITEMS = {};
 
 function loadData() {
-    fetch("./data.json")   // <--- toimii GitHub & Appsmith
+    fetch("./data.json")
         .then(res => {
             if (!res.ok) throw new Error("JSON LOAD FAILED");
             return res.json();
         })
         .then(data => {
             ITEMS = data;
-            buildGrid();
+            buildSlider();
         })
-        .catch(err => {
-            console.error("DATA LOAD ERROR:", err);
-        });
+        .catch(err => console.error("DATA LOAD ERROR:", err));
 }
 
-/* ---- BUILD STORE GRID ---- */
-function buildGrid() {
-    const grid = document.getElementById("grid");
-    grid.innerHTML = "";
+/* ---- SLIDER ---- */
+let currentPage = 0;
+let totalPages = 0;
 
-    for (let i = 1; i <= 9; i++) {
-        const item = ITEMS[i];
-        if (!item) continue;
+function buildSlider() {
+    const slider = document.getElementById("slider");
+    slider.innerHTML = "";
+
+    const ids = Object.keys(ITEMS);
+    totalPages = Math.ceil(ids.length / 2);
+
+    // Generate store cards
+    for (let id of ids) {
+        const item = ITEMS[id];
 
         const div = document.createElement("div");
         div.className = "store-item";
+
         div.innerHTML = `
             <img src="${item.image}" alt="${item.name}">
             <h3>${item.name}</h3>
             <p>Price: ${item.price}</p>
-            <button onclick="openModal(${i})">Buy</button>
+            <button onclick="openModal(${id})">Buy</button>
         `;
-        grid.appendChild(div);
+
+        slider.appendChild(div);
+    }
+
+    updateSliderPosition();
+}
+
+function updateSliderPosition() {
+    const slider = document.getElementById("slider");
+    const offset = currentPage * -100;  
+    slider.style.transform = `translateX(${offset}%)`;
+}
+
+function nextPage() {
+    if (currentPage < totalPages - 1) {
+        currentPage++;
+        updateSliderPosition();
     }
 }
+
+function prevPage() {
+    if (currentPage > 0) {
+        currentPage--;
+        updateSliderPosition();
+    }
+}
+
+/* ---- TOUCH SWIPE ---- */
+let startX = 0;
+
+document.querySelector(".slider-container").addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+});
+
+document.querySelector(".slider-container").addEventListener("touchend", e => {
+    let endX = e.changedTouches[0].clientX;
+    let diff = endX - startX;
+
+    if (diff > 40) prevPage();
+    if (diff < -40) nextPage();
+});
 
 /* ---- MODAL ---- */
 let selectedItem = null;
 
 function openModal(id) {
     selectedItem = id;
+    const item = ITEMS[id];
+
     document.getElementById("modalText").textContent =
-        "Buy " + ITEMS[id].name + " for " + ITEMS[id].price + " points?";
+        `Buy ${item.name} for ${item.price} points?`;
+
     document.getElementById("confirmModal").style.display = "flex";
 }
 
@@ -150,7 +242,7 @@ function closeModal() {
     document.getElementById("confirmModal").style.display = "none";
 }
 
-/* ---- PURCHASE ---- */
+/* ---- BUY ---- */
 function confirmPurchase() {
     closeModal();
 
@@ -173,4 +265,3 @@ loadData();
 </script>
 </body>
 </html>
-
