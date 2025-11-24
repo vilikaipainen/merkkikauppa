@@ -141,4 +141,108 @@ window.addEventListener("message", (event) => {
 
 /* ---------- DISPLAY POINTS ---------- */
 function updatePointsDisplay() {
-    document.getElementById("pointsDisplay").te
+    document.getElementById("pointsDisplay").textContent = "Points: " + CURRENT_POINTS;
+}
+
+/* ---------- LOAD SHOP ITEMS ---------- */
+let ITEMS = {};
+let cardCount = 0;
+let currentIndex = 0;
+
+function loadData() {
+    fetch("./data.json")
+        .then(res => res.json())
+        .then(data => {
+            ITEMS = data;
+            buildSlider();
+        });
+}
+
+/* ---------- SLIDER BUILD ---------- */
+function buildSlider() {
+    const slider = document.getElementById("slider");
+    slider.innerHTML = "";
+
+    for (let i = 1; i <= 9; i++) {
+        if (!ITEMS[i]) continue;
+
+        const div = document.createElement("div");
+        div.className = "store-item";
+        div.innerHTML = `
+            <img src="${ITEMS[i].image}">
+            <h3>${ITEMS[i].name}</h3>
+            <p>Price: ${ITEMS[i].price}</p>
+            <button onclick="openModal(${i})">Buy</button>
+        `;
+        slider.appendChild(div);
+        cardCount++;
+    }
+}
+
+/* ---------- SLIDER MOVEMENT ---------- */
+function nextSlide() {
+    if (currentIndex < cardCount - 2) currentIndex += 2;
+    updateSlide();
+}
+function prevSlide() {
+    if (currentIndex > 0) currentIndex -= 2;
+    updateSlide();
+}
+function updateSlide() {
+    const slider = document.getElementById("slider");
+    const offset = -(currentIndex * 50);
+    slider.style.transform = `translateX(${offset}%)`;
+}
+
+/* ---------- TOUCH SWIPE SUPPORT ---------- */
+let startX = 0;
+document.getElementById("sliderContainer").addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+});
+document.getElementById("sliderContainer").addEventListener("touchend", (e) => {
+    let endX = e.changedTouches[0].clientX;
+    if (startX - endX > 50) nextSlide();
+    if (endX - startX > 50) prevSlide();
+});
+
+/* ---------- PURCHASE MODAL ---------- */
+let selectedItem = null;
+
+function openModal(id) {
+    selectedItem = id;
+    document.getElementById("modalText").textContent =
+        `Buy ${ITEMS[id].name} for ${ITEMS[id].price} points?`;
+    document.getElementById("confirmModal").style.display = "flex";
+}
+function closeModal() {
+    document.getElementById("confirmModal").style.display = "none";
+}
+
+/* ---------- PURCHASE LOGIC ---------- */
+function confirmPurchase() {
+    closeModal();
+
+    const price = ITEMS[selectedItem].price;
+
+    if (CURRENT_POINTS < price) {
+        alert("Not enough points!");
+        return;
+    }
+
+    CURRENT_POINTS -= price;
+
+    // Notify Appsmith to update DB + store
+    window.parent.postMessage(
+        { type: "updatePoints", value: CURRENT_POINTS },
+        "*"
+    );
+
+    updatePointsDisplay();
+    alert("You bought: " + ITEMS[selectedItem].name);
+}
+
+loadData();
+
+</script>
+</body>
+</html>
