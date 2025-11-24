@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Store</title>
 
-<!-- FONT -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -16,16 +15,9 @@
         margin: 0;
         overflow-x: hidden;
     }
-
-    h1 {
-        text-align: center;
-        font-size: 26px;
-        margin-bottom: 10px;
-        font-weight: 600;
-    }
+    h1 { text-align: center; font-size: 26px; margin-bottom: 10px; font-weight: 600; }
     h2 { text-align: center; }
 
-    /* ---------------- Slider Layout ------------------- */
     .slider-container {
         width: 100%;
         overflow: hidden;
@@ -33,14 +25,11 @@
         max-width: 600px;
         margin: 0 auto;
     }
-
     .slider {
         display: flex;
         transition: transform 0.35s ease;
         will-change: transform;
     }
-
-    /* Always two items visible */
     .store-item {
         width: 50%;
         min-width: 50%;
@@ -52,7 +41,6 @@
         box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         text-align: center;
     }
-
     .store-item img {
         width: 90%;
         max-height: 200px;
@@ -60,14 +48,12 @@
         border-radius: 8px;
     }
 
-    /* Buttons */
     .slider-controls {
         display: flex;
         justify-content: center;
         margin-top: 10px;
         gap: 20px;
     }
-
     .slider-controls button {
         padding: 10px 18px;
         font-size: 16px;
@@ -76,10 +62,8 @@
         color: white;
         border: none;
     }
+    .slider-controls button:hover { background: #005fcc; }
 
-    button:hover { background: #005fcc; }
-
-    /* Modal Styling */
     .modal-bg {
         display: none;
         position: fixed;
@@ -115,18 +99,15 @@
 <h1>Store</h1>
 <h2 id="pointsDisplay">Points: 0</h2>
 
-<!-- Slider -->
 <div class="slider-container" id="sliderContainer">
     <div class="slider" id="slider"></div>
 </div>
 
-<!-- Navigation buttons -->
 <div class="slider-controls">
     <button onclick="prevSlide()">←</button>
     <button onclick="nextSlide()">→</button>
 </div>
 
-<!-- Modal -->
 <div id="confirmModal" class="modal-bg">
     <div class="modal">
         <h3 id="modalText">Are you sure?</h3>
@@ -137,113 +118,27 @@
 
 <script>
 
-/* --------------------- POINTS ----------------------- */
+/* ---------- COMMUNICATION WITH APPSMITH ----------- */
+let CURRENT_POINTS = 0;
+
+// Request total points from Appsmith
+window.parent.postMessage({ type: "requestPoints" }, "*");
+
+// Receive points from Appsmith
+window.addEventListener("message", (event) => {
+    if (!event.data || !event.data.type) return;
+
+    if (event.data.type === "sendPoints") {
+        CURRENT_POINTS = Number(event.data.value || 0);
+        updatePointsDisplay();
+    }
+
+    if (event.data.type === "pointsUpdated") {
+        CURRENT_POINTS = Number(event.data.value || 0);
+        updatePointsDisplay();
+    }
+});
+
+/* ---------- DISPLAY POINTS ---------- */
 function updatePointsDisplay() {
-    const points = Number(localStorage.getItem("points") || 0);
-    document.getElementById("pointsDisplay").textContent = "Points: " + points;
-}
-updatePointsDisplay();
-
-/* --------------------- LOAD ITEMS ----------------------- */
-let ITEMS = {};
-let cardCount = 0;
-let currentIndex = 0;
-
-function loadData() {
-    fetch("./data.json")
-        .then(res => res.json())
-        .then(data => {
-            ITEMS = data;
-            buildSlider();
-        });
-}
-
-/* ---------------------- BUILD SLIDER --------------------- */
-function buildSlider() {
-    const slider = document.getElementById("slider");
-    slider.innerHTML = "";
-
-    for (let i = 1; i <= 9; i++) {
-        if (!ITEMS[i]) continue;
-
-        const div = document.createElement("div");
-        div.className = "store-item";
-        div.innerHTML = `
-            <img src="${ITEMS[i].image}">
-            <h3>${ITEMS[i].name}</h3>
-            <p>Price: ${ITEMS[i].price}</p>
-            <button onclick="openModal(${i})">Buy</button>
-        `;
-        slider.appendChild(div);
-        cardCount++;
-    }
-}
-
-/* ---------------------- SLIDE LOGIC --------------------- */
-function nextSlide() {
-    if (currentIndex < cardCount - 2) currentIndex += 2;
-    updateSlide();
-}
-
-function prevSlide() {
-    if (currentIndex > 0) currentIndex -= 2;
-    updateSlide();
-}
-
-function updateSlide() {
-    const slider = document.getElementById("slider");
-    const offset = -(currentIndex * (100 / 2)); // 2 cards visible → 50%
-    slider.style.transform = `translateX(${offset}%)`;
-}
-
-/* ---------------------- SWIPE SUPPORT --------------------- */
-let startX = 0;
-
-document.getElementById("sliderContainer").addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-});
-
-document.getElementById("sliderContainer").addEventListener("touchend", (e) => {
-    let endX = e.changedTouches[0].clientX;
-    if (startX - endX > 50) nextSlide();
-    if (endX - startX > 50) prevSlide();
-});
-
-/* ---------------------- MODAL --------------------------- */
-let selectedItem = null;
-
-function openModal(id) {
-    selectedItem = id;
-    document.getElementById("modalText").textContent =
-        `Buy ${ITEMS[id].name} for ${ITEMS[id].price} points?`;
-    document.getElementById("confirmModal").style.display = "flex";
-}
-
-function closeModal() {
-    document.getElementById("confirmModal").style.display = "none";
-}
-
-/* ---------------------- PURCHASE --------------------------- */
-function confirmPurchase() {
-    closeModal();
-
-    let points = Number(localStorage.getItem("points") || 0);
-    const price = ITEMS[selectedItem].price;
-
-    if (points < price) {
-        alert("Not enough points!");
-        return;
-    }
-
-    points -= price;
-    localStorage.setItem("points", points);
-    updatePointsDisplay();
-
-    alert("You bought: " + ITEMS[selectedItem].name);
-}
-
-loadData();
-
-</script>
-</body>
-</html>
+    document.getElementById("pointsDisplay").te
