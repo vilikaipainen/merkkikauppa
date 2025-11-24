@@ -5,82 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Store</title>
 
+<!-- FONT -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
 <style>
     body {
-        font-family: Arial, sans-serif;
+        font-family: "Poppins", sans-serif;
         padding: 20px;
         background: #f6f6f6;
         margin: 0;
+        overflow-x: hidden;
     }
 
-    h1 { text-align: center; font-size: 24px; margin-bottom: 10px; }
-    #pointsDisplay { text-align: center; margin-bottom: 20px; }
+    h1 {
+        text-align: center;
+        font-size: 26px;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    h2 { text-align: center; }
 
-    /* --- SLIDER --- */
+    /* ---------------- Slider Layout ------------------- */
     .slider-container {
         width: 100%;
-        max-width: 600px;
         overflow: hidden;
-        margin: 0 auto;
         position: relative;
+        max-width: 600px;
+        margin: 0 auto;
     }
 
     .slider {
         display: flex;
         transition: transform 0.35s ease;
+        will-change: transform;
     }
 
+    /* Always two items visible */
     .store-item {
+        width: 50%;
         min-width: 50%;
         box-sizing: border-box;
         padding: 12px;
         background: white;
-        margin: 10px;
+        margin: 10px 0;
         border-radius: 10px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         text-align: center;
     }
 
     .store-item img {
-        width: 100%;
+        width: 90%;
         max-height: 200px;
         object-fit: cover;
         border-radius: 8px;
     }
 
-    h3 { margin: 10px 0 8px; font-size: 18px; }
-    p { margin: 0; }
-
-    button {
-        margin-top: 10px;
-        padding: 12px;
-        width: 100%;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-
-    button:hover { background: #005fcc; }
-
-    /* --- NAVIGATION BUTTONS --- */
+    /* Buttons */
     .slider-controls {
         display: flex;
         justify-content: center;
-        margin-top: 15px;
+        margin-top: 10px;
         gap: 20px;
     }
 
     .slider-controls button {
-        padding: 10px 20px;
-        font-size: 20px;
+        padding: 10px 18px;
+        font-size: 16px;
         border-radius: 8px;
-        width: 80px;
+        background: #007bff;
+        color: white;
+        border: none;
     }
 
-    /* --- MODAL --- */
+    button:hover { background: #005fcc; }
+
+    /* Modal Styling */
     .modal-bg {
         display: none;
         position: fixed;
@@ -91,7 +90,6 @@
         align-items: center;
         padding: 20px;
     }
-
     .modal {
         background: white;
         padding: 25px;
@@ -100,141 +98,124 @@
         max-width: 350px;
         text-align: center;
     }
-
     .modal button {
         width: 45%;
         margin: 8px;
         font-size: 16px;
         padding: 12px;
     }
-
-    .cancel-btn { background: #888; }
+    .cancel-btn {
+        background: #888;
+    }
 </style>
 </head>
+
 <body>
 
 <h1>Store</h1>
 <h2 id="pointsDisplay">Points: 0</h2>
 
-<!-- ⭐ NEW SLIDER -->
-<div class="slider-container">
+<!-- Slider -->
+<div class="slider-container" id="sliderContainer">
     <div class="slider" id="slider"></div>
 </div>
 
+<!-- Navigation buttons -->
 <div class="slider-controls">
-    <button onclick="prevPage()">←</button>
-    <button onclick="nextPage()">→</button>
+    <button onclick="prevSlide()">←</button>
+    <button onclick="nextSlide()">→</button>
 </div>
 
-<!-- MODAL -->
+<!-- Modal -->
 <div id="confirmModal" class="modal-bg">
     <div class="modal">
-        <h3 id="modalText">Are you sure you want to buy this item?</h3>
-        <button class="confirm-btn" onclick="confirmPurchase()">Yes</button>
+        <h3 id="modalText">Are you sure?</h3>
+        <button onclick="confirmPurchase()">Yes</button>
         <button class="cancel-btn" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <script>
-/* ---- POINT DISPLAY ---- */
+
+/* --------------------- POINTS ----------------------- */
 function updatePointsDisplay() {
     const points = Number(localStorage.getItem("points") || 0);
     document.getElementById("pointsDisplay").textContent = "Points: " + points;
 }
 updatePointsDisplay();
 
-/* ---- DATA ---- */
+/* --------------------- LOAD ITEMS ----------------------- */
 let ITEMS = {};
+let cardCount = 0;
+let currentIndex = 0;
 
 function loadData() {
     fetch("./data.json")
-        .then(res => {
-            if (!res.ok) throw new Error("JSON LOAD FAILED");
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
             ITEMS = data;
             buildSlider();
-        })
-        .catch(err => console.error("DATA LOAD ERROR:", err));
+        });
 }
 
-/* ---- SLIDER ---- */
-let currentPage = 0;
-let totalPages = 0;
-
+/* ---------------------- BUILD SLIDER --------------------- */
 function buildSlider() {
     const slider = document.getElementById("slider");
     slider.innerHTML = "";
 
-    const ids = Object.keys(ITEMS);
-    totalPages = Math.ceil(ids.length / 2);
-
-    // Generate store cards
-    for (let id of ids) {
-        const item = ITEMS[id];
+    for (let i = 1; i <= 9; i++) {
+        if (!ITEMS[i]) continue;
 
         const div = document.createElement("div");
         div.className = "store-item";
-
         div.innerHTML = `
-            <img src="${item.image}" alt="${item.name}">
-            <h3>${item.name}</h3>
-            <p>Price: ${item.price}</p>
-            <button onclick="openModal(${id})">Buy</button>
+            <img src="${ITEMS[i].image}">
+            <h3>${ITEMS[i].name}</h3>
+            <p>Price: ${ITEMS[i].price}</p>
+            <button onclick="openModal(${i})">Buy</button>
         `;
-
         slider.appendChild(div);
+        cardCount++;
     }
-
-    updateSliderPosition();
 }
 
-function updateSliderPosition() {
+/* ---------------------- SLIDE LOGIC --------------------- */
+function nextSlide() {
+    if (currentIndex < cardCount - 2) currentIndex += 2;
+    updateSlide();
+}
+
+function prevSlide() {
+    if (currentIndex > 0) currentIndex -= 2;
+    updateSlide();
+}
+
+function updateSlide() {
     const slider = document.getElementById("slider");
-    const offset = currentPage * -100;  
+    const offset = -(currentIndex * (100 / 2)); // 2 cards visible → 50%
     slider.style.transform = `translateX(${offset}%)`;
 }
 
-function nextPage() {
-    if (currentPage < totalPages - 1) {
-        currentPage++;
-        updateSliderPosition();
-    }
-}
-
-function prevPage() {
-    if (currentPage > 0) {
-        currentPage--;
-        updateSliderPosition();
-    }
-}
-
-/* ---- TOUCH SWIPE ---- */
+/* ---------------------- SWIPE SUPPORT --------------------- */
 let startX = 0;
 
-document.querySelector(".slider-container").addEventListener("touchstart", e => {
+document.getElementById("sliderContainer").addEventListener("touchstart", (e) => {
     startX = e.touches[0].clientX;
 });
 
-document.querySelector(".slider-container").addEventListener("touchend", e => {
+document.getElementById("sliderContainer").addEventListener("touchend", (e) => {
     let endX = e.changedTouches[0].clientX;
-    let diff = endX - startX;
-
-    if (diff > 40) prevPage();
-    if (diff < -40) nextPage();
+    if (startX - endX > 50) nextSlide();
+    if (endX - startX > 50) prevSlide();
 });
 
-/* ---- MODAL ---- */
+/* ---------------------- MODAL --------------------------- */
 let selectedItem = null;
 
 function openModal(id) {
     selectedItem = id;
-    const item = ITEMS[id];
-
     document.getElementById("modalText").textContent =
-        `Buy ${item.name} for ${item.price} points?`;
-
+        `Buy ${ITEMS[id].name} for ${ITEMS[id].price} points?`;
     document.getElementById("confirmModal").style.display = "flex";
 }
 
@@ -242,7 +223,7 @@ function closeModal() {
     document.getElementById("confirmModal").style.display = "none";
 }
 
-/* ---- BUY ---- */
+/* ---------------------- PURCHASE --------------------------- */
 function confirmPurchase() {
     closeModal();
 
@@ -262,6 +243,7 @@ function confirmPurchase() {
 }
 
 loadData();
+
 </script>
 </body>
 </html>
